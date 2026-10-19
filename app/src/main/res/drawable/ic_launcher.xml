@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PROVISIONAL: logo genérico (libro abierto + estrella) mientras no se cuente con el logo
+     oficial de la Escuela Escritora Marcela Paz. Para reemplazarlo: en Android Studio,
+     clic derecho en res/drawable > New > Image Asset / Vector Asset (o copiar un PNG
+     "logo_escuela.png" aquí y borrar este .xml). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Fondo circular -->
+    <path
+        android:fillColor="@color/escuela_azul"
+        android:pathData="M4,60 A56,56 0 1,1 116,60 A56,56 0 1,1 4,60 Z" />
+    <!-- Estrella -->
+    <path
+        android:fillColor="@color/escuela_amarillo"
+        android:pathData="M60,14 L63.5,23.5 L73.5,23.5 L65.5,29.5 L68.5,39 L60,33 L51.5,39 L54.5,29.5 L46.5,23.5 L56.5,23.5 Z" />
+    <!-- Libro abierto: pagina izquierda y derecha -->
+    <path
+        android:fillColor="@color/escuela_blanco"
+        android:pathData="M22,48 Q40,40 58,50 L58,92 Q40,83 22,90 Z" />
+    <path
+        android:fillColor="@color/escuela_blanco"
+        android:pathData="M62,50 Q80,40 98,48 L98,90 Q80,83 62,92 Z" />
+    <!-- Lineas de texto -->
+    <path
+        android:strokeColor="@color/escuela_azul"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M30,60 Q40,56 50,61 M30,68 Q40,64 50,69 M30,76 Q40,72 50,77 M70,61 Q80,56 90,60 M70,69 Q80,64 90,68 M70,77 Q80,72 90,76" />
+</vector>

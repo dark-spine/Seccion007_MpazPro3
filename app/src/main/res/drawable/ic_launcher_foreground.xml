@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Capa frontal del ícono adaptativo (Android 8+). Contenido dentro de la zona segura
+     central de 66dp del lienzo de 108dp. PROVISIONAL, ver logo_escuela.xml. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/escuela_amarillo"
+        android:pathData="M54,26 L56.6,33 L64,33 L58,37.5 L60.3,44.5 L54,40 L47.7,44.5 L50,37.5 L44,33 L51.4,33 Z" />
+    <path
+        android:fillColor="@color/escuela_blanco"
+        android:pathData="M32,52 Q43,46 52,53 L52,80 Q43,74 32,79 Z" />
+    <path
+        android:fillColor="@color/escuela_blanco"
+        android:pathData="M56,53 Q65,46 76,52 L76,79 Q65,74 56,80 Z" />
+</vector>

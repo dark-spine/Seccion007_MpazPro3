@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores PROVISIONALES de la escuela (usados por el logo y el ícono de la app).
+         TODO(equipo): reemplazar por los oficiales que entregue la escuela / CITT, y
+         mantenerlos iguales a los de ui/theme/Theme.kt. -->
+    <color name="escuela_azul">#FF1565C0</color>
+    <color name="escuela_amarillo">#FFFFC107</color>
+    <color name="escuela_blanco">#FFFFFFFF</color>
+</resources>
