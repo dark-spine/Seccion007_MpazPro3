@@ -38,6 +38,9 @@ interface UsuarioDao {
     )
     suspend fun buscarPorCredenciales(usuario: String, clave: String): Usuario?
 
+    @Query("SELECT * FROM usuarios")
+    fun observarTodos(): Flow<List<Usuario>>
+
     @Query("SELECT COUNT(*) FROM usuarios")
     suspend fun contar(): Int
 
@@ -82,11 +85,34 @@ interface ContenidoDao {
 @Dao
 interface RecursoDao {
 
+    @Query("SELECT * FROM recursos")
+    fun observarTodos(): Flow<List<RecursoDidactico>>
+
     @Query("SELECT * FROM recursos WHERE contenidoId = :contenidoId")
     fun observarDeContenido(contenidoId: String): Flow<List<RecursoDidactico>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTodos(recursos: List<RecursoDidactico>)
+}
+
+@Dao
+interface SeguimientoDao {
+
+    @Query("SELECT * FROM seguimientos")
+    fun observarTodos(): Flow<List<SeguimientoEntity>>
+
+    @Query(
+        """
+        SELECT * FROM seguimientos
+        WHERE estudianteId = :estudianteId AND contenidoId = :contenidoId
+        LIMIT 1
+        """
+    )
+    suspend fun porEstudianteYContenido(estudianteId: String, contenidoId: String): SeguimientoEntity?
+
+    /** REPLACE sirve como "insertar o actualizar": la clave compuesta decide cuál es. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun guardar(seguimiento: SeguimientoEntity)
 }
 
 @Dao

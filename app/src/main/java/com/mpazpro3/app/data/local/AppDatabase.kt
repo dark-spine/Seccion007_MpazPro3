@@ -23,9 +23,10 @@ import com.mpazpro3.app.model.Usuario
         Usuario::class,
         Contenido::class,
         RecursoDidactico::class,
-        Asignacion::class
+        Asignacion::class,
+        SeguimientoEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Convertidores::class)
@@ -35,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun contenidoDao(): ContenidoDao
     abstract fun recursoDao(): RecursoDao
     abstract fun asignacionDao(): AsignacionDao
+    abstract fun seguimientoDao(): SeguimientoDao
 
     companion object {
 
@@ -51,7 +53,13 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "mpazpro3.db"
-                ).build().also { instancia = it }
+                )
+                    // Al agregar la tabla seguimientos la versión subió de 1 a 2.
+                    // En desarrollo se recrea la base en vez de escribir una migración;
+                    // en una app real habría que implementar Migration(1, 2).
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { instancia = it }
             }
     }
 }

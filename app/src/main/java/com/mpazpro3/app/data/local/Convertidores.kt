@@ -3,6 +3,7 @@ package com.mpazpro3.app.data.local
 import androidx.room.TypeConverter
 import com.mpazpro3.app.model.Asignatura
 import com.mpazpro3.app.model.EstadoAprobacion
+import com.mpazpro3.app.model.EstadoAvance
 import com.mpazpro3.app.model.Perfil
 
 /**
@@ -32,4 +33,10 @@ class Convertidores {
 
     @TypeConverter
     fun textoAEstado(valor: String): EstadoAprobacion = EstadoAprobacion.valueOf(valor)
+
+    @TypeConverter
+    fun avanceATexto(valor: EstadoAvance): String = valor.name
+
+    @TypeConverter
+    fun textoAAvance(valor: String): EstadoAvance = EstadoAvance.valueOf(valor)
 }

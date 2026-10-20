@@ -1,12 +1,18 @@
 package com.mpazpro3.app.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.mpazpro3.app.data.MockData
+import com.mpazpro3.app.data.MpazProRepositorio
+import com.mpazpro3.app.data.local.AppDatabase
+import com.mpazpro3.app.data.local.SeguimientoEntity
 import com.mpazpro3.app.model.Actividad
 import com.mpazpro3.app.model.Asignacion
 import com.mpazpro3.app.model.Asignatura
 import com.mpazpro3.app.model.Contenido
 import com.mpazpro3.app.model.EstadoAprobacion
+import com.mpazpro3.app.model.EstadoAvance
 import com.mpazpro3.app.model.Estudiante
 import com.mpazpro3.app.model.InformeDocente
 import com.mpazpro3.app.model.Perfil
@@ -14,9 +20,15 @@ import com.mpazpro3.app.model.RecursoDidactico
 import com.mpazpro3.app.model.RespuestaEstudiante
 import com.mpazpro3.app.model.SeguimientoAvance
 import com.mpazpro3.app.model.Usuario
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel único, compartido por todas las pantallas (se crea una sola vez en AppNavigation).
@@ -26,7 +38,38 @@ import kotlinx.coroutines.flow.asStateFlow
  * Requerimientos_Seccion007 al que corresponde. Mientras no se implemente, las listas se
  * muestran sin filtrar y las acciones (aprobar, asignar, responder, validar) no cambian nada.
  */
-class MpazProViewModel : ViewModel() {
+@OptIn(ExperimentalCoroutinesApi::class)
+class MpazProViewModel(application: Application) : AndroidViewModel(application) {
+
+    // =====================================================================
+    // Persistencia (Room)
+    // =====================================================================
+
+    /**
+     * El ViewModel no habla con Room directamente: habla con el repositorio.
+     * Cadena completa: Pantalla -> ViewModel -> Repositorio -> DAO -> SQLite.
+     */
+    private val repositorio = MpazProRepositorio(AppDatabase.obtener(application))
+
+    init {
+        // La primera vez que se abre la app, carga los datos ficticios en la base.
+        // En ejecuciones siguientes no hace nada: los datos ya persisten.
+        viewModelScope.launch { repositorio.sembrarSiEstaVacia() }
+    }
+
+    /**
+     * Las pantallas llaman funciones normales (no suspend), así que las corrientes de Room
+     * se recogen acá y quedan disponibles como StateFlow.
+     *
+     * Se usa SharingStarted.Eagerly y no WhileSubscribed porque varias funciones leen
+     * .value sin suscribirse: con WhileSubscribed nadie colectaría y el valor quedaría vacío.
+     */
+    private val usuariosRoom: StateFlow<List<Usuario>> = repositorio.usuarios()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Seguimientos de avance guardados en Room (RF-11). */
+    private val seguimientosRoom: StateFlow<List<SeguimientoEntity>> = repositorio.seguimientos()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // =====================================================================
     // Autenticación
@@ -39,14 +82,36 @@ class MpazProViewModel : ViewModel() {
     val errorLogin: StateFlow<String?> = _errorLogin.asStateFlow()
 
     /**
-     * TODO(equipo): validar usuario y clave contra MockData.usuarios. Si son correctos, dejar
-     * _usuarioActivo con ese usuario y devolver true (AppNavigation ya lleva a cada perfil a su
-     * pantalla). Si no, dejar _errorLogin con un mensaje y devolver false.
-     * Pendiente con el CITT: cómo se autentica el estudiante.
+     * RF-00. Valida las credenciales contra la tabla usuarios de Room.
+     *
+     * Reglas aplicadas:
+     *  - campos obligatorios, con mensaje distinto para cada uno;
+     *  - el nombre de usuario ignora mayúsculas y espacios sobrantes; la clave no;
+     *  - si falla, el mensaje es genérico: no se revela si el error fue el usuario o la clave.
      */
     fun login(usuario: String, clave: String): Boolean {
-        _errorLogin.value = "Login sin implementar — ver TODO(equipo) en MpazProViewModel.login()."
-        return false
+        if (usuario.isBlank()) {
+            _errorLogin.value = "Ingresa tu usuario"
+            return false
+        }
+        if (clave.isBlank()) {
+            _errorLogin.value = "Ingresa tu clave"
+            return false
+        }
+
+        val buscado = usuario.trim().lowercase()
+        val encontrado = usuariosRoom.value.firstOrNull {
+            it.usuario.trim().lowercase() == buscado && it.clave == clave
+        }
+
+        return if (encontrado != null) {
+            _usuarioActivo.value = encontrado
+            _errorLogin.value = null
+            true
+        } else {
+            _errorLogin.value = "Usuario o clave incorrectos"
+            false
+        }
     }
 
     /**
@@ -54,7 +119,8 @@ class MpazProViewModel : ViewModel() {
      * credenciales. TODO(equipo): eliminar esta función y los botones "Modo desarrollo".
      */
     fun entrarModoDesarrollo(perfil: Perfil) {
-        _usuarioActivo.value = MockData.usuarios.first { it.perfil == perfil }
+        _usuarioActivo.value = usuariosRoom.value.firstOrNull { it.perfil == perfil }
+            ?: MockData.usuarios.first { it.perfil == perfil }
         _errorLogin.value = null
     }
 
@@ -69,14 +135,36 @@ class MpazProViewModel : ViewModel() {
     // Datos compartidos y selección (no es lógica de negocio)
     // =====================================================================
 
-    private val _contenidos = MutableStateFlow(MockData.contenidos)
-    val contenidos: StateFlow<List<Contenido>> = _contenidos.asStateFlow()
+    /** Contenidos: ahora vienen de Room, no de una lista en memoria. */
+    val contenidos: StateFlow<List<Contenido>> = repositorio.contenidos()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val _recursos = MutableStateFlow(MockData.recursos)
+    private val _recursos: StateFlow<List<RecursoDidactico>> = repositorio.recursos()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // Todavía en memoria: estas tablas se migran a Room en una etapa posterior.
     private val _actividades = MutableStateFlow(MockData.actividades)
 
-    private val _asignaciones = MutableStateFlow(MockData.asignaciones)
-    val asignaciones: StateFlow<List<Asignacion>> = _asignaciones.asStateFlow()
+    val asignaciones: StateFlow<List<Asignacion>> = repositorio.asignaciones()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * RF-07. Contenidos del curso del estudiante activo, resueltos por la consulta SQL
+     * del DAO (INNER JOIN con asignaciones + filtro estado = APROBADO, que es RN-02).
+     *
+     * flatMapLatest reacciona al cambio de usuario: al iniciar o cerrar sesión, la
+     * corriente se vuelve a armar con el curso que corresponda.
+     */
+    private val contenidosDelCurso: StateFlow<List<Contenido>> = _usuarioActivo
+        .flatMapLatest { activo ->
+            val curso = activo?.curso
+            if (activo?.perfil == Perfil.ESTUDIANTE && !curso.isNullOrBlank()) {
+                repositorio.contenidosDelCurso(curso)
+            } else {
+                flowOf(emptyList())
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _estudiantes = MutableStateFlow(MockData.estudiantes)
     val estudiantes: StateFlow<List<Estudiante>> = _estudiantes.asStateFlow()
@@ -101,7 +189,7 @@ class MpazProViewModel : ViewModel() {
         _estudianteSeleccionadoId.value = id
     }
 
-    fun contenidoPorId(id: String?): Contenido? = _contenidos.value.find { it.id == id }
+    fun contenidoPorId(id: String?): Contenido? = contenidos.value.find { it.id == id }
 
     fun estudiantePorId(id: String?): Estudiante? = _estudiantes.value.find { it.id == id }
 
@@ -117,7 +205,7 @@ class MpazProViewModel : ViewModel() {
     /**
      * TODO(equipo): filtrar por asignatura y por estado (null = todos). Hoy devuelve todo.
      */
-    fun contenidosFiltrados(asignatura: Asignatura?, estado: EstadoAprobacion?): List<Contenido> = _contenidos.value
+    fun contenidosFiltrados(asignatura: Asignatura?, estado: EstadoAprobacion?): List<Contenido> = contenidos.value
 
     /**
      * TODO(equipo): cambiar el estado del contenido a APROBADO y guardar la observación.
@@ -141,7 +229,7 @@ class MpazProViewModel : ViewModel() {
      * TODO(equipo): devolver SOLO los contenidos APROBADOS por UTP (regla de negocio: un
      * contenido no autorizado no puede asignarse). Hoy devuelve todos.
      */
-    fun contenidosDisponiblesParaAsignar(): List<Contenido> = _contenidos.value
+    fun contenidosDisponiblesParaAsignar(): List<Contenido> = contenidos.value
 
     /**
      * TODO(equipo): crear las asignaciones del curso para los contenidos elegidos, con el máximo
@@ -154,7 +242,7 @@ class MpazProViewModel : ViewModel() {
     }
 
     /** TODO(equipo): devolver solo las asignaciones del curso indicado. Hoy devuelve todas. */
-    fun asignacionesDelCurso(curso: String): List<Asignacion> = _asignaciones.value
+    fun asignacionesDelCurso(curso: String): List<Asignacion> = asignaciones.value
 
     /**
      * TODO(equipo): calcular el avance del estudiante (0.0 a 1.0) a partir de sus
@@ -198,20 +286,49 @@ class MpazProViewModel : ViewModel() {
     // =====================================================================
 
     /**
-     * TODO(equipo): devolver solo los contenidos asignados al curso del estudiante. Hoy devuelve
-     * todos. Regla: el estudiante no puede modificar contenidos ni ver el informe pedagógico.
+     * RF-07. Solo los contenidos asignados al curso del estudiante y aprobados por UTP.
+     *
+     * El cruce y el filtro los resuelve la consulta del DAO; acá se devuelve el último
+     * valor emitido. Si el usuario no es estudiante o no tiene curso, la lista va vacía:
+     * el estudiante nunca ve contenido que no le fue asignado (RN-01 y RN-02).
      */
-    fun contenidosDelEstudiante(usuario: Usuario?): List<Contenido> = _contenidos.value
-
-    /** TODO(equipo): avance del estudiante en el contenido (0.0 a 1.0). Hoy devuelve 0. */
-    fun progreso(estudianteId: String, contenidoId: String): Float = 0f
+    fun contenidosDelEstudiante(usuario: Usuario?): List<Contenido> = contenidosDelCurso.value
 
     /**
-     * TODO(equipo): guardar que el estudiante terminó de revisar el material. RF: "conservar el
-     * progreso del estudiante y confirmar la finalización de cada actividad". Hoy no hace nada.
+     * RF-11. Avance del estudiante en un contenido, de 0.0 a 1.0.
+     *
+     * Fórmula acordada por el equipo: el recorrido tiene tres etapas de igual peso.
+     *   1) revisar el material      -> 1/3
+     *   2) responder los desafíos   -> 1/3   (RF-08, a cargo de otro equipo)
+     *   3) rendir la evaluación     -> 1/3   (RF-09, a cargo de otro equipo)
+     *
+     * Como este equipo implementa el RF-07, hoy el avance llega hasta 1/3 con el
+     * material revisado (EN_PROGRESO). FINALIZADO queda reservado para cuando se
+     * registre la evaluación final.
+     */
+    fun progreso(estudianteId: String, contenidoId: String): Float {
+        val seguimiento = seguimientosRoom.value.firstOrNull {
+            it.estudianteId == estudianteId && it.contenidoId == contenidoId
+        } ?: return 0f
+
+        return when (seguimiento.estado) {
+            EstadoAvance.NO_INICIADO -> 0f
+            EstadoAvance.EN_PROGRESO -> 1f / 3f
+            EstadoAvance.FINALIZADO -> 1f
+        }
+    }
+
+    /**
+     * RF-11. Guarda en Room que el estudiante revisó el material del contenido.
+     *
+     * Se ejecuta en viewModelScope porque la escritura en la base es una función suspend:
+     * Room no permite tocar la base de datos en el hilo principal (RNF-09).
      */
     fun confirmarMaterialRevisado(estudianteId: String, contenidoId: String) {
-        // Sin implementar todavía.
+        if (estudianteId.isBlank() || contenidoId.isBlank()) return
+        viewModelScope.launch {
+            repositorio.marcarMaterialRevisado(estudianteId, contenidoId)
+        }
     }
 
     /**
