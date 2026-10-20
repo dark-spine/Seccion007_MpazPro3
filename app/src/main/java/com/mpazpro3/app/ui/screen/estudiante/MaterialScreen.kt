@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,19 +23,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.mpazpro3.app.R
 import com.mpazpro3.app.navigation.Rutas
 import com.mpazpro3.app.ui.components.BarraSuperior
+import com.mpazpro3.app.ui.components.ReproductorAudio
 import com.mpazpro3.app.viewmodel.MpazProViewModel
 
 /**
  * Material de estudio del contenido elegido: explicación, imagen, audio de apoyo, ejemplo e
- * instrucciones. RF: "consultar el material asignado".
+ * instrucciones. RF-07: "consultar el material asignado".
  *
- * TODO(equipo):
- *  - Mostrar la imagen real del recurso (hoy es un recuadro de ejemplo).
- *  - Reproducir el audio de apoyo (por ejemplo con MediaPlayer y un archivo en res/raw).
- *    RNF: el audio complementa la lectura, no la reemplaza.
- *  - confirmarMaterialRevisado() todavía no guarda el avance.
+ * El audio de apoyo usa MediaPlayer (recurso nativo) a través de ReproductorAudio.
+ * El texto escrito siempre se muestra: el audio es complemento, no reemplazo (RNF-02).
  */
 @Composable
 fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel) {
@@ -76,11 +74,10 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                             }
                         }
 
-                        if (recurso.audioDisponible) {
-                            OutlinedButton(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = { /* TODO(equipo): reproducir el audio de apoyo */ }
-                            ) { Text("Escuchar audio de apoyo") }
+                        // Audio de apoyo: solo si el recurso lo declara Y existe el archivo.
+                        val audioResId = audioDelRecurso(recurso.id)
+                        if (recurso.audioDisponible && audioResId != null) {
+                            ReproductorAudio(audioResId = audioResId)
                         }
 
                         Text("Ejemplo", style = MaterialTheme.typography.titleMedium)
@@ -103,4 +100,16 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
             ) { Text("¡Listo! Ir a los desafíos", style = MaterialTheme.typography.titleMedium) }
         }
     }
+}
+
+/**
+ * Relaciona cada recurso con su archivo de audio en res/raw.
+ *
+ * Se resuelve acá y no en la base de datos porque el id de un recurso de Android
+ * (R.raw.*) se genera al compilar y no tiene sentido guardarlo en una tabla.
+ * Si a futuro se agregan más audios, basta con sumar una línea al when.
+ */
+private fun audioDelRecurso(recursoId: String): Int? = when (recursoId) {
+    "R1" -> R.raw.centenas_explicacion
+    else -> null
 }
