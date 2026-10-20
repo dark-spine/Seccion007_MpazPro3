@@ -96,6 +96,26 @@ interface RecursoDao {
 }
 
 @Dao
+interface SeguimientoDao {
+
+    @Query("SELECT * FROM seguimientos")
+    fun observarTodos(): Flow<List<SeguimientoEntity>>
+
+    @Query(
+        """
+        SELECT * FROM seguimientos
+        WHERE estudianteId = :estudianteId AND contenidoId = :contenidoId
+        LIMIT 1
+        """
+    )
+    suspend fun porEstudianteYContenido(estudianteId: String, contenidoId: String): SeguimientoEntity?
+
+    /** REPLACE sirve como "insertar o actualizar": la clave compuesta decide cuál es. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun guardar(seguimiento: SeguimientoEntity)
+}
+
+@Dao
 interface AsignacionDao {
 
     @Query("SELECT * FROM asignaciones WHERE curso = :curso")

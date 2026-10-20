@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.mpazpro3.app.data.MockData
 import com.mpazpro3.app.data.MpazProRepositorio
 import com.mpazpro3.app.data.local.AppDatabase
+import com.mpazpro3.app.data.local.SeguimientoEntity
 import com.mpazpro3.app.model.Actividad
 import com.mpazpro3.app.model.Asignacion
 import com.mpazpro3.app.model.Asignatura
 import com.mpazpro3.app.model.Contenido
 import com.mpazpro3.app.model.EstadoAprobacion
+import com.mpazpro3.app.model.EstadoAvance
 import com.mpazpro3.app.model.Estudiante
 import com.mpazpro3.app.model.InformeDocente
 import com.mpazpro3.app.model.Perfil
@@ -63,6 +65,10 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
      * .value sin suscribirse: con WhileSubscribed nadie colectaría y el valor quedaría vacío.
      */
     private val usuariosRoom: StateFlow<List<Usuario>> = repositorio.usuarios()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Seguimientos de avance guardados en Room (RF-11). */
+    private val seguimientosRoom: StateFlow<List<SeguimientoEntity>> = repositorio.seguimientos()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // =====================================================================
@@ -288,15 +294,41 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
      */
     fun contenidosDelEstudiante(usuario: Usuario?): List<Contenido> = contenidosDelCurso.value
 
-    /** TODO(equipo): avance del estudiante en el contenido (0.0 a 1.0). Hoy devuelve 0. */
-    fun progreso(estudianteId: String, contenidoId: String): Float = 0f
+    /**
+     * RF-11. Avance del estudiante en un contenido, de 0.0 a 1.0.
+     *
+     * Fórmula acordada por el equipo: el recorrido tiene tres etapas de igual peso.
+     *   1) revisar el material      -> 1/3
+     *   2) responder los desafíos   -> 1/3   (RF-08, a cargo de otro equipo)
+     *   3) rendir la evaluación     -> 1/3   (RF-09, a cargo de otro equipo)
+     *
+     * Como este equipo implementa el RF-07, hoy el avance llega hasta 1/3 con el
+     * material revisado (EN_PROGRESO). FINALIZADO queda reservado para cuando se
+     * registre la evaluación final.
+     */
+    fun progreso(estudianteId: String, contenidoId: String): Float {
+        val seguimiento = seguimientosRoom.value.firstOrNull {
+            it.estudianteId == estudianteId && it.contenidoId == contenidoId
+        } ?: return 0f
+
+        return when (seguimiento.estado) {
+            EstadoAvance.NO_INICIADO -> 0f
+            EstadoAvance.EN_PROGRESO -> 1f / 3f
+            EstadoAvance.FINALIZADO -> 1f
+        }
+    }
 
     /**
-     * TODO(equipo): guardar que el estudiante terminó de revisar el material. RF: "conservar el
-     * progreso del estudiante y confirmar la finalización de cada actividad". Hoy no hace nada.
+     * RF-11. Guarda en Room que el estudiante revisó el material del contenido.
+     *
+     * Se ejecuta en viewModelScope porque la escritura en la base es una función suspend:
+     * Room no permite tocar la base de datos en el hilo principal (RNF-09).
      */
     fun confirmarMaterialRevisado(estudianteId: String, contenidoId: String) {
-        // Sin implementar todavía.
+        if (estudianteId.isBlank() || contenidoId.isBlank()) return
+        viewModelScope.launch {
+            repositorio.marcarMaterialRevisado(estudianteId, contenidoId)
+        }
     }
 
     /**
