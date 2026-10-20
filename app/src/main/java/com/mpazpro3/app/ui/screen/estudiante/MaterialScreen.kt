@@ -44,7 +44,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.mpazpro3.app.R
-import com.mpazpro3.app.navigation.Rutas
 import com.mpazpro3.app.ui.components.BarraSuperior
 import com.mpazpro3.app.ui.components.ReproductorAudio
 import com.mpazpro3.app.viewmodel.MpazProViewModel
@@ -172,6 +171,11 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                 }
             }
 
+            /*
+             * Alcance: los desafíos (RF-08) y la evaluación final (RF-09) están a cargo de
+             * otro equipo de la sección. Este botón guarda el avance y vuelve al inicio en
+             * lugar de navegar a una pantalla todavía sin implementar.
+             */
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,12 +184,16 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                     val id = contenidoId
                     if (id != null) {
                         viewModel.confirmarMaterialRevisado(usuario?.id.orEmpty(), id)
-                        mostrarConfirmacion = true
-                    } else {
-                        navController.navigate(Rutas.ESTUDIANTE_DESAFIOS)
                     }
+                    mostrarConfirmacion = true
                 }
-            ) { Text("¡Listo! Ir a los desafíos", style = MaterialTheme.typography.titleMedium) }
+            ) { Text("¡Listo! Terminé de revisar", style = MaterialTheme.typography.titleMedium) }
+
+            Text(
+                text = "Los desafíos y la evaluación estarán disponibles próximamente.",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 
@@ -199,21 +207,20 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
             title = { Text("¡Terminaste de revisar el material!") },
             text = {
                 Text(
-                    "Tu avance quedó guardado. Ahora puedes practicar con los desafíos.",
+                    "Tu avance quedó guardado. Puedes volver cuando quieras para repasar.",
                     style = MaterialTheme.typography.bodyLarge
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     mostrarConfirmacion = false
-                    navController.navigate(Rutas.ESTUDIANTE_DESAFIOS)
-                }) { Text("Ir a los desafíos") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    mostrarConfirmacion = false
                     navController.popBackStack()
                 }) { Text("Volver a mis actividades") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacion = false }) {
+                    Text("Seguir leyendo")
+                }
             }
         )
     }
