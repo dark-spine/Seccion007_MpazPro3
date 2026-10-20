@@ -7,6 +7,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.mpazpro3.app.R
@@ -93,7 +96,29 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                         Text(recurso.titulo, style = MaterialTheme.typography.headlineSmall)
                         Text(recurso.explicacion, style = MaterialTheme.typography.bodyLarge)
 
-                        if (recurso.descripcionImagen != null) {
+                        /*
+                         * Imagen del recurso (RF-07). Si existe un dibujo para este recurso se
+                         * muestra; si no, se deja el recuadro con la descripción escrita.
+                         *
+                         * contentDescription no es decorativo: es lo que lee el lector de
+                         * pantalla, por eso usa la descripción del propio recurso.
+                         */
+                        val imagenResId = imagenDelRecurso(recurso.id)
+                        if (imagenResId != null) {
+                            Image(
+                                painter = painterResource(id = imagenResId),
+                                contentDescription = recurso.descripcionImagen,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(130.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(12.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else if (recurso.descripcionImagen != null) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -203,5 +228,16 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
  */
 private fun audioDelRecurso(recursoId: String): Int? = when (recursoId) {
     "R1" -> R.raw.centenas_explicacion
+    else -> null
+}
+
+/**
+ * Relaciona cada recurso con su ilustración en res/drawable.
+ *
+ * Mismo criterio que audioDelRecurso(): los identificadores R.drawable.* se generan al
+ * compilar, así que no tiene sentido guardarlos en la base de datos.
+ */
+private fun imagenDelRecurso(recursoId: String): Int? = when (recursoId) {
+    "R1" -> R.drawable.bloques_base_diez
     else -> null
 }
