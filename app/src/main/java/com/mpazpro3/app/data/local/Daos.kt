@@ -38,6 +38,9 @@ interface UsuarioDao {
     )
     suspend fun buscarPorCredenciales(usuario: String, clave: String): Usuario?
 
+    @Query("SELECT * FROM usuarios")
+    fun observarTodos(): Flow<List<Usuario>>
+
     @Query("SELECT COUNT(*) FROM usuarios")
     suspend fun contar(): Int
 
@@ -81,6 +84,9 @@ interface ContenidoDao {
 
 @Dao
 interface RecursoDao {
+
+    @Query("SELECT * FROM recursos")
+    fun observarTodos(): Flow<List<RecursoDidactico>>
 
     @Query("SELECT * FROM recursos WHERE contenidoId = :contenidoId")
     fun observarDeContenido(contenidoId: String): Flow<List<RecursoDidactico>>

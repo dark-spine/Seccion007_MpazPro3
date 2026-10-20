@@ -24,6 +24,10 @@ class MpazProRepositorio(private val db: AppDatabase) {
     suspend fun autenticar(usuario: String, clave: String): Usuario? =
         db.usuarioDao().buscarPorCredenciales(usuario, clave)
 
+    /** Todos los usuarios, para validar el login sin bloquear la pantalla. */
+    fun usuarios(): Flow<List<Usuario>> =
+        db.usuarioDao().observarTodos()
+
     // ----- Contenidos -----
 
     fun contenidos(): Flow<List<Contenido>> =
@@ -37,6 +41,9 @@ class MpazProRepositorio(private val db: AppDatabase) {
         db.contenidoDao().porId(id)
 
     // ----- Recursos didácticos (RF-07) -----
+
+    fun recursos(): Flow<List<RecursoDidactico>> =
+        db.recursoDao().observarTodos()
 
     fun recursosDe(contenidoId: String): Flow<List<RecursoDidactico>> =
         db.recursoDao().observarDeContenido(contenidoId)
