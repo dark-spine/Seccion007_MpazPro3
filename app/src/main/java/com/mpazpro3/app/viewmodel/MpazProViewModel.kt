@@ -120,15 +120,6 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * SOLO PARA DESARROLLO: entra con el usuario de prueba del perfil indicado, sin validar
-     * credenciales. TODO(equipo): eliminar esta función y los botones "Modo desarrollo".
-     */
-    fun entrarModoDesarrollo(perfil: Perfil) {
-        _usuarioActivo.value = usuariosRoom.value.firstOrNull { it.perfil == perfil }
-            ?: MockData.usuarios.first { it.perfil == perfil }
-        _errorLogin.value = null
-    }
 
     fun logout() {
         _usuarioActivo.value = null
