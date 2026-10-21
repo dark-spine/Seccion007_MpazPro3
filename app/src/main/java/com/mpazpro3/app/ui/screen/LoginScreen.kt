@@ -5,15 +5,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +48,13 @@ import com.mpazpro3.app.viewmodel.MpazProViewModel
  * la pantalla principal de UTP, Docente o Estudiante.
  *
  * RF-00: viewModel.login() valida las credenciales contra la tabla usuarios de Room.
- * RNF-08: la clave se muestra oculta por defecto y no existe ninguna forma de entrar
- * sin credenciales (el modo desarrollo fue eliminado antes de la entrega).
+ *
+ * Validaciones: la decisión de qué campo está mal se toma en el ViewModel; esta pantalla
+ * solo dibuja el resultado (campo en rojo, ícono de advertencia y mensaje bajo el campo).
+ * Así la lógica queda desacoplada de la interfaz.
+ *
+ * RNF-08: la clave se muestra oculta por defecto y no existe ninguna forma de entrar sin
+ * credenciales (el modo desarrollo fue eliminado antes de la entrega).
  *
  * Usuarios de prueba (datos ficticios, RNF-04):
  *   utp@mpazpro3.cl / utp123
@@ -60,7 +71,10 @@ fun LoginScreen(
     var usuario by remember { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
     var claveVisible by remember { mutableStateOf(false) }
-    val error by viewModel.errorLogin.collectAsState()
+
+    val errorGeneral by viewModel.errorLogin.collectAsState()
+    val errorUsuario by viewModel.errorUsuario.collectAsState()
+    val errorClave by viewModel.errorClave.collectAsState()
 
     Scaffold { padding ->
         Column(
@@ -84,22 +98,72 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            /*
+             * Campo usuario.
+             * isError pinta el borde y la etiqueta en rojo; el ícono de advertencia aparece
+             * solo cuando hay error; supportingText deja el mensaje bajo este campo y no
+             * en un aviso suelto al final del formulario.
+             */
             OutlinedTextField(
                 value = usuario,
-                onValueChange = { usuario = it },
+                onValueChange = {
+                    usuario = it
+                    viewModel.limpiarErroresLogin()
+                },
                 label = { Text("Usuario o correo") },
+                leadingIcon = {
+                    Icon(Icons.Filled.Person, contentDescription = null)
+                },
+                trailingIcon = {
+                    if (errorUsuario != null) {
+                        Icon(
+                            imageVector = Icons.Filled.Error,
+                            contentDescription = "Campo con error",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                isError = errorUsuario != null,
+                supportingText = {
+                    val mensaje = errorUsuario
+                    if (mensaje != null && mensaje.isNotBlank()) {
+                        Text(mensaje, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
+            /*
+             * Campo clave. Conserva el botón de mostrar/ocultar como trailingIcon (RNF-08),
+             * así que el error se señala con el borde rojo, el candado teñido y el mensaje.
+             */
             OutlinedTextField(
                 value = clave,
-                onValueChange = { clave = it },
+                onValueChange = {
+                    clave = it
+                    viewModel.limpiarErroresLogin()
+                },
                 label = { Text("Clave") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null,
+                        tint = if (errorClave != null) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
                 singleLine = true,
                 visualTransformation = if (claveVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                isError = errorClave != null,
+                supportingText = {
+                    val mensaje = errorClave
+                    if (mensaje != null && mensaje.isNotBlank()) {
+                        Text(mensaje, color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 trailingIcon = {
                     IconButton(onClick = { claveVisible = !claveVisible }) {
                         Icon(
@@ -111,18 +175,40 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (error != null) {
-                Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
+            /*
+             * Aviso general, solo para el caso de credenciales incorrectas. No dice cuál de
+             * los dos datos falló, por seguridad.
+             */
+            if (errorGeneral != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            errorGeneral.orEmpty(),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
 
             Button(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 onClick = {
                     if (viewModel.login(usuario.trim(), clave)) {
                         viewModel.usuarioActivo.value?.perfil?.let(onIngresar)
                     }
                 }
-            ) { Text("Ingresar") }
+            ) { Text("Ingresar", style = MaterialTheme.typography.titleMedium) }
         }
     }
 }

@@ -88,6 +88,20 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
     val errorLogin: StateFlow<String?> = _errorLogin.asStateFlow()
 
     /**
+     * Errores por campo del formulario de inicio de sesión.
+     *
+     * Van separados del mensaje general para que la pantalla pueda marcar en rojo el campo
+     * exacto que falla y poner el mensaje justo debajo de él, en lugar de un aviso suelto.
+     * La decisión de qué campo está mal se toma acá, no en el @Composable: la interfaz
+     * solo dibuja lo que el ViewModel ya determinó.
+     */
+    private val _errorUsuario = MutableStateFlow<String?>(null)
+    val errorUsuario: StateFlow<String?> = _errorUsuario.asStateFlow()
+
+    private val _errorClave = MutableStateFlow<String?>(null)
+    val errorClave: StateFlow<String?> = _errorClave.asStateFlow()
+
+    /**
      * RF-00. Valida las credenciales contra la tabla usuarios de Room.
      *
      * Reglas aplicadas:
@@ -96,14 +110,22 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
      *  - si falla, el mensaje es genérico: no se revela si el error fue el usuario o la clave.
      */
     fun login(usuario: String, clave: String): Boolean {
+        // Se limpian los errores anteriores antes de volver a validar.
+        _errorUsuario.value = null
+        _errorClave.value = null
+        _errorLogin.value = null
+
+        // Campos obligatorios: se revisan los dos para avisar de ambos a la vez.
+        var hayVacios = false
         if (usuario.isBlank()) {
-            _errorLogin.value = "Ingresa tu usuario"
-            return false
+            _errorUsuario.value = "Ingresa tu usuario"
+            hayVacios = true
         }
         if (clave.isBlank()) {
-            _errorLogin.value = "Ingresa tu clave"
-            return false
+            _errorClave.value = "Ingresa tu clave"
+            hayVacios = true
         }
+        if (hayVacios) return false
 
         val buscado = usuario.trim().lowercase()
         val encontrado = usuariosRoom.value.firstOrNull {
@@ -112,11 +134,22 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
 
         return if (encontrado != null) {
             _usuarioActivo.value = encontrado
-            _errorLogin.value = null
             true
         } else {
+            // Mensaje genérico: no se revela cuál de los dos datos falló.
             _errorLogin.value = "Usuario o clave incorrectos"
+            _errorUsuario.value = " "
+            _errorClave.value = " "
             false
+        }
+    }
+
+    /** Borra los avisos de error cuando el usuario corrige lo que escribió. */
+    fun limpiarErroresLogin() {
+        if (_errorUsuario.value != null || _errorClave.value != null || _errorLogin.value != null) {
+            _errorUsuario.value = null
+            _errorClave.value = null
+            _errorLogin.value = null
         }
     }
 
@@ -124,6 +157,8 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
     fun logout() {
         _usuarioActivo.value = null
         _errorLogin.value = null
+        _errorUsuario.value = null
+        _errorClave.value = null
         _contenidoSeleccionadoId.value = null
         _estudianteSeleccionadoId.value = null
     }
