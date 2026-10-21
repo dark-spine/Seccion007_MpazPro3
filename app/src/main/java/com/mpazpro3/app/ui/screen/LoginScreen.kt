@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,11 +41,11 @@ import com.mpazpro3.app.viewmodel.MpazProViewModel
  * Inicio de sesión (primera pantalla). Según el perfil del usuario, AppNavigation lo lleva a
  * la pantalla principal de UTP, Docente o Estudiante.
  *
- * La pantalla está completa, pero viewModel.login() es TODO(equipo): por ahora siempre
- * rechaza. Mientras tanto, los botones "Modo desarrollo" permiten entrar con el usuario de
- * prueba de cada perfil. TODO(equipo): eliminarlos antes de la entrega final.
+ * RF-00: viewModel.login() valida las credenciales contra la tabla usuarios de Room.
+ * RNF-08: la clave se muestra oculta por defecto y no existe ninguna forma de entrar
+ * sin credenciales (el modo desarrollo fue eliminado antes de la entrega).
  *
- * Usuarios de prueba (MockData.usuarios):
+ * Usuarios de prueba (datos ficticios, RNF-04):
  *   utp@mpazpro3.cl / utp123
  *   docente.3basicoA@mpazpro3.cl / docente123
  *   est001 / 1234
@@ -124,19 +123,6 @@ fun LoginScreen(
                     }
                 }
             ) { Text("Ingresar") }
-
-            // ---- SOLO PARA DESARROLLO ---- TODO(equipo): eliminar antes de entregar.
-            Text(
-                "Modo desarrollo (entrar sin login):",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Perfil.entries.forEach { perfil ->
-                TextButton(onClick = {
-                    viewModel.entrarModoDesarrollo(perfil)
-                    onIngresar(perfil)
-                }) { Text("Entrar como ${perfil.etiqueta}") }
-            }
         }
     }
 }

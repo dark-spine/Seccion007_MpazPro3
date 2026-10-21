@@ -1,5 +1,13 @@
 package com.mpazpro3.app.ui.screen.estudiante
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,23 +16,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.mpazpro3.app.R
-import com.mpazpro3.app.navigation.Rutas
 import com.mpazpro3.app.ui.components.BarraSuperior
 import com.mpazpro3.app.ui.components.ReproductorAudio
 import com.mpazpro3.app.viewmodel.MpazProViewModel
@@ -43,6 +62,9 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
     val contenido = viewModel.contenidoPorId(contenidoId)
     val recursos = viewModel.recursosDe(contenidoId)
 
+    // Controla el diálogo de confirmación al terminar de revisar el material (RF-11).
+    var mostrarConfirmacion by remember { mutableStateOf(false) }
+
     Scaffold(topBar = { BarraSuperior(contenido?.asignatura?.etiqueta ?: "Material", navController) }) { padding ->
         Column(
             modifier = Modifier
@@ -57,12 +79,45 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
             }
 
             recursos.forEach { recurso ->
+
+                // Cada recurso decide por separado si muestra su ejemplo e instrucciones.
+                var mostrarEjemplo by remember(recurso.id) { mutableStateOf(false) }
+
+                // La flecha gira 180° al desplegar, para indicar el estado del bloque.
+                val giroFlecha by animateFloatAsState(
+                    targetValue = if (mostrarEjemplo) 180f else 0f,
+                    animationSpec = tween(300),
+                    label = "giro"
+                )
+
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(recurso.titulo, style = MaterialTheme.typography.headlineSmall)
                         Text(recurso.explicacion, style = MaterialTheme.typography.bodyLarge)
 
-                        if (recurso.descripcionImagen != null) {
+                        /*
+                         * Imagen del recurso (RF-07). Si existe un dibujo para este recurso se
+                         * muestra; si no, se deja el recuadro con la descripción escrita.
+                         *
+                         * contentDescription no es decorativo: es lo que lee el lector de
+                         * pantalla, por eso usa la descripción del propio recurso.
+                         */
+                        val imagenResId = imagenDelRecurso(recurso.id)
+                        if (imagenResId != null) {
+                            Image(
+                                painter = painterResource(id = imagenResId),
+                                contentDescription = recurso.descripcionImagen,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(130.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(12.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else if (recurso.descripcionImagen != null) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -80,25 +135,94 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                             ReproductorAudio(audioResId = audioResId)
                         }
 
-                        Text("Ejemplo", style = MaterialTheme.typography.titleMedium)
-                        Text(recurso.ejemplo, style = MaterialTheme.typography.bodyLarge)
-                        Text("Instrucciones", style = MaterialTheme.typography.titleMedium)
-                        Text(recurso.instrucciones, style = MaterialTheme.typography.bodyLarge)
+                        /*
+                         * Ejemplo e instrucciones van ocultos al entrar.
+                         * RNF-01: mostrar menos texto de una vez ayuda a un lector de 3° básico;
+                         * el estudiante decide cuándo ver el detalle.
+                         */
+                        TextButton(onClick = { mostrarEjemplo = !mostrarEjemplo }) {
+                            Text(
+                                if (mostrarEjemplo) "Ocultar ejemplo e instrucciones"
+                                else "Ver ejemplo e instrucciones",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .rotate(giroFlecha)
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = mostrarEjemplo,
+                            enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                            exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Ejemplo", style = MaterialTheme.typography.titleMedium)
+                                Text(recurso.ejemplo, style = MaterialTheme.typography.bodyLarge)
+                                Text("Instrucciones", style = MaterialTheme.typography.titleMedium)
+                                Text(recurso.instrucciones, style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
                     }
                 }
             }
 
+            /*
+             * Alcance: los desafíos (RF-08) y la evaluación final (RF-09) están a cargo de
+             * otro equipo de la sección. Este botón guarda el avance y vuelve al inicio en
+             * lugar de navegar a una pantalla todavía sin implementar.
+             */
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 onClick = {
                     val id = contenidoId
-                    if (id != null) viewModel.confirmarMaterialRevisado(usuario?.id.orEmpty(), id)
-                    navController.navigate(Rutas.ESTUDIANTE_DESAFIOS)
+                    if (id != null) {
+                        viewModel.confirmarMaterialRevisado(usuario?.id.orEmpty(), id)
+                    }
+                    mostrarConfirmacion = true
                 }
-            ) { Text("¡Listo! Ir a los desafíos", style = MaterialTheme.typography.titleMedium) }
+            ) { Text("¡Listo! Terminé de revisar", style = MaterialTheme.typography.titleMedium) }
+
+            Text(
+                text = "Los desafíos y la evaluación estarán disponibles próximamente.",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
+    }
+
+    /*
+     * RF-11: "confirmar la finalización de cada actividad".
+     * El diálogo avisa que el avance quedó guardado antes de continuar.
+     */
+    if (mostrarConfirmacion) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacion = false },
+            title = { Text("¡Terminaste de revisar el material!") },
+            text = {
+                Text(
+                    "Tu avance quedó guardado. Puedes volver cuando quieras para repasar.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    mostrarConfirmacion = false
+                    navController.popBackStack()
+                }) { Text("Volver a mis actividades") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacion = false }) {
+                    Text("Seguir leyendo")
+                }
+            }
+        )
     }
 }
 
@@ -111,5 +235,16 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
  */
 private fun audioDelRecurso(recursoId: String): Int? = when (recursoId) {
     "R1" -> R.raw.centenas_explicacion
+    else -> null
+}
+
+/**
+ * Relaciona cada recurso con su ilustración en res/drawable.
+ *
+ * Mismo criterio que audioDelRecurso(): los identificadores R.drawable.* se generan al
+ * compilar, así que no tiene sentido guardarlos en la base de datos.
+ */
+private fun imagenDelRecurso(recursoId: String): Int? = when (recursoId) {
+    "R1" -> R.drawable.bloques_base_diez
     else -> null
 }

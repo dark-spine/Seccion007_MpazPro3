@@ -67,8 +67,14 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
     private val usuariosRoom: StateFlow<List<Usuario>> = repositorio.usuarios()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    /** Seguimientos de avance guardados en Room (RF-11). */
-    private val seguimientosRoom: StateFlow<List<SeguimientoEntity>> = repositorio.seguimientos()
+    /**
+     * Seguimientos de avance guardados en Room (RF-11).
+     *
+     * Es público para que la pantalla pueda observarlo con collectAsState(): así la barra de
+     * avance se vuelve a dibujar sola cuando cambia el progreso, sin depender de que el
+     * usuario navegue hacia atrás para forzar la recomposición.
+     */
+    val avances: StateFlow<List<SeguimientoEntity>> = repositorio.seguimientos()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // =====================================================================
@@ -114,15 +120,6 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * SOLO PARA DESARROLLO: entra con el usuario de prueba del perfil indicado, sin validar
-     * credenciales. TODO(equipo): eliminar esta función y los botones "Modo desarrollo".
-     */
-    fun entrarModoDesarrollo(perfil: Perfil) {
-        _usuarioActivo.value = usuariosRoom.value.firstOrNull { it.perfil == perfil }
-            ?: MockData.usuarios.first { it.perfil == perfil }
-        _errorLogin.value = null
-    }
 
     fun logout() {
         _usuarioActivo.value = null
@@ -307,7 +304,7 @@ class MpazProViewModel(application: Application) : AndroidViewModel(application)
      * registre la evaluación final.
      */
     fun progreso(estudianteId: String, contenidoId: String): Float {
-        val seguimiento = seguimientosRoom.value.firstOrNull {
+        val seguimiento = avances.value.firstOrNull {
             it.estudianteId == estudianteId && it.contenidoId == contenidoId
         } ?: return 0f
 

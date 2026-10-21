@@ -10,15 +10,20 @@ Evaluación Parcial 2 · Sección 007
 
 ## Integrantes
 
-| Nombre | Rol en esta entrega |
+| Nombre | Aporte en esta entrega |
 |---|---|
-| Pablo Toro | Persistencia con Room, RF-07, RF-11, reproductor de audio |
-| Jaime Gajardo | *(completar)* |
-| Edison Monardes | *(completar)* |
+| Pablo Toro | Configuración del proyecto, capa de persistencia con Room (entidades, DAOs, base de datos y repositorio), RF-00 (login validado) y RF-07 (contenidos del curso del estudiante) |
+| Jaime Gajardo | RF-11 (seguimiento de avance persistente), reproductor de audio con MediaPlayer y animaciones de interfaz (G7) |
+| Edison Monardes | Ilustración de bloques de base diez, resolución del flujo hacia desafíos y eliminación del modo desarrollo (RNF-08) |
 
 Repositorio: https://github.com/dark-spine/Seccion007_MpazPro3
 
 > El repositorio es privado. El docente está agregado como colaborador.
+
+> **Nota sobre el historial de commits:** el equipo trabajó presencialmente en un mismo
+> equipo durante las sesiones de taller, por lo que los commits figuran bajo una sola cuenta
+> de GitHub. El detalle de qué trabajó cada integrante es el de la tabla anterior y puede
+> verificarse con el equipo durante la defensa.
 
 ---
 
@@ -203,6 +208,17 @@ Supuestos adicionales de alcance de este equipo:
 - El contenido **C2 (Matemática)** se carga ya **APROBADO**, simulando que UTP lo autorizó
   mediante el RF-01, que corresponde a otro equipo.
 - La asignación **AS1** del curso "3° básico A" se carga como dato inicial, simulando el RF-04.
+
+---
+
+## Pendiente antes de la entrega
+
+- [ ] Completar la fecha y hora exactas del plazo (la rúbrica la deja en blanco).
+- [ ] Confirmar con el docente el formato del nombre del ZIP para tres integrantes.
+- [ ] Armar el ZIP sin las carpetas `build/` ni `.gradle/`.
+- [ ] Descomprimir el ZIP en otra carpeta, abrirlo en Android Studio y comprobar que
+  sincroniza, compila y ejecuta antes de subirlo a AVA.
+- [ ] Verificar la app en un segundo equipo distinto al del taller.
 
 ---
 
