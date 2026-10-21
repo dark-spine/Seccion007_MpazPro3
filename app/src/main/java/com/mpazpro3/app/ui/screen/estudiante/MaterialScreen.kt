@@ -44,6 +44,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.mpazpro3.app.R
+import com.mpazpro3.app.device.recordarVibrador
 import com.mpazpro3.app.ui.components.BarraSuperior
 import com.mpazpro3.app.ui.components.ReproductorAudio
 import com.mpazpro3.app.viewmodel.MpazProViewModel
@@ -64,6 +65,9 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
 
     // Controla el diálogo de confirmación al terminar de revisar el material (RF-11).
     var mostrarConfirmacion by remember { mutableStateOf(false) }
+
+    // Segundo recurso nativo: confirmación táctil que acompaña a la visual.
+    val vibrador = recordarVibrador()
 
     Scaffold(topBar = { BarraSuperior(contenido?.asignatura?.etiqueta ?: "Material", navController) }) { padding ->
         Column(
@@ -185,6 +189,8 @@ fun MaterialScreen(navController: NavHostController, viewModel: MpazProViewModel
                     if (id != null) {
                         viewModel.confirmarMaterialRevisado(usuario?.id.orEmpty(), id)
                     }
+                    // El pulso acompaña al diálogo; nunca lo reemplaza (RNF-01).
+                    vibrador.confirmacion()
                     mostrarConfirmacion = true
                 }
             ) { Text("¡Listo! Terminé de revisar", style = MaterialTheme.typography.titleMedium) }

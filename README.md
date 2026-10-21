@@ -162,10 +162,15 @@ siguientes no se vuelven a insertar: el progreso del estudiante sobrevive al cie
 
 ---
 
-## Recurso nativo utilizado
+## Recursos nativos utilizados
 
-**`android.media.MediaPlayer`** — reproductor del audio de apoyo del material de estudio.
-Implementado en `ui/components/ReproductorAudio.kt`.
+La aplicación accede a dos recursos del dispositivo. El RNF-03 del caso prohíbe cámara, GPS,
+micrófono y datos biométricos, por lo que ambos se eligieron dentro de lo permitido.
+
+### 1. `android.media.MediaPlayer` — audio de apoyo
+
+Reproductor del audio del material de estudio. Implementado en
+`ui/components/ReproductorAudio.kt`.
 
 ### Por qué es pertinente al caso
 
@@ -188,6 +193,30 @@ operativo, **no requiere ningún permiso en el manifest** y no accede a hardware
 - No hay reproducción automática: el estudiante decide cuándo escuchar (RNF-02).
 - El archivo de audio es **material propio** grabado por el equipo, lo que cumple el **RNF-05**
   sobre contenidos propios, públicos o autorizados.
+- No requiere ningún permiso en el manifest.
+
+### 2. `android.os.Vibrator` — confirmación táctil
+
+Pulso breve de vibración implementado en `device/Vibrador.kt`.
+
+**Por qué es pertinente al caso.** Los estudiantes de Tercero Básico tienen distintos ritmos
+de lectura y de atención. La vibración acompaña a la confirmación visual en dos momentos: al
+terminar de revisar el material y cuando el audio de apoyo llega a su fin. En el segundo caso
+es especialmente útil, porque el estudiante puede estar escuchando sin mirar la pantalla.
+
+Es siempre un refuerzo, nunca la única señal: toda confirmación se muestra también en
+pantalla, en línea con el **RNF-01**.
+
+**Integración y seguridad.**
+
+- Requiere `android.permission.VIBRATE`, declarado en el manifest. Es un permiso de nivel
+  **normal**: se concede al instalar, sin diálogo ni solicitud en tiempo de ejecución.
+- No accede a cámara, GPS, micrófono ni datos biométricos (**RNF-03**).
+- No lee ni transmite ningún dato del dispositivo.
+- `Vibrador.kt` resuelve la compatibilidad de versiones: desde API 31 obtiene el servicio a
+  través de `VibratorManager`, y desde API 26 usa `VibrationEffect`. La app parte en API 24.
+- Si el dispositivo no tiene hardware de vibración —común en tablets— las llamadas no hacen
+  nada y la aplicación sigue funcionando con normalidad.
 
 ---
 

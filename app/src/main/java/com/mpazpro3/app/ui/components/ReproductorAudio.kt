@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.mpazpro3.app.device.recordarVibrador
 import kotlinx.coroutines.delay
 
 /**
@@ -52,6 +53,7 @@ fun ReproductorAudio(
     modifier: Modifier = Modifier
 ) {
     val contexto = LocalContext.current
+    val vibrador = recordarVibrador()
 
     var reproductor by remember { mutableStateOf<MediaPlayer?>(null) }
     var sonando by remember { mutableStateOf(false) }
@@ -66,6 +68,8 @@ fun ReproductorAudio(
             sonando = false
             posicionMs = 0
             player.seekTo(0)
+            // Aviso táctil de que el audio terminó, útil si el estudiante no mira la pantalla.
+            vibrador.aviso()
         }
         reproductor = mp
         duracionMs = mp?.duration ?: 0
