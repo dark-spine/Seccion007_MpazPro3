@@ -16,23 +16,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Colores PROVISIONALES de la escuela (no se pudieron obtener los oficiales). TODO(equipo):
-// reemplazar por los colores del manual de marca / insignia que entregue la escuela o el CITT.
-// Si se cambian, cambiar también res/values/colors.xml (ícono de la app y logo).
+// Paleta de la escuela. Si se cambia, cambiar también res/values/colors.xml (ícono y logo).
 private val AzulMarcelaPaz = Color(0xFF1565C0)
 private val AmarilloEstrella = Color(0xFFFFC107)
 private val VerdeAprobado = Color(0xFF2E7D32)
+private val VerdeAprobadoClaro = Color(0xFF81C784)
 
 private val LightColors = lightColorScheme(
     primary = AzulMarcelaPaz,
+    onPrimary = Color.White,
     secondary = VerdeAprobado,
-    tertiary = AmarilloEstrella
+    onSecondary = Color.White,
+    tertiary = AmarilloEstrella,
+    onTertiary = Color.Black
 )
 
 private val DarkColors = darkColorScheme(
     primary = AzulMarcelaPaz,
-    secondary = VerdeAprobado,
-    tertiary = AmarilloEstrella
+    onPrimary = Color.White,
+    secondary = VerdeAprobadoClaro,
+    onSecondary = Color.Black,
+    tertiary = AmarilloEstrella,
+    onTertiary = Color.Black
 )
 
 @Composable
@@ -54,8 +59,10 @@ fun MpazPro3Theme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            // La barra superior es azul oscuro: los íconos de la barra de estado siempre claros.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 

@@ -1,8 +1,5 @@
 package com.mpazpro3.app.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
 enum class EstadoAprobacion(val etiqueta: String) {
     PENDIENTE("Pendiente de revisión"),
     APROBADO("Aprobado por UTP"),
@@ -21,11 +18,10 @@ enum class Asignatura(val etiqueta: String) {
  * Contenido curricular (entidad del caso): nivel, asignatura, unidad, Objetivo de Aprendizaje,
  * código oficial, eje curricular, recurso de referencia y estado de aprobación de UTP.
  *
- * Regla de negocio: un contenido que no está APROBADO no puede ser asignado por el docente.
+ * Regla de negocio (RN-02): un contenido que no está APROBADO no puede ser asignado por el docente.
  */
-@Entity(tableName = "contenidos")
 data class Contenido(
-    @PrimaryKey val id: String,
+    val id: String,
     val nivel: String = "3° básico",
     val asignatura: Asignatura,
     val unidad: String,

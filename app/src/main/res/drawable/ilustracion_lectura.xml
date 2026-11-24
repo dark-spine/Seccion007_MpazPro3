@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Libro abierto con un punto (pausa larga) y una coma (pausa corta). Ilustración propia (RNF-05). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="120dp"
+    android:viewportWidth="240"
+    android:viewportHeight="120">
+
+    <!-- Página izquierda -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="2"
+        android:pathData="M20,24 Q70,10 118,28 L118,100 Q70,86 20,98 Z" />
+    <!-- Página derecha -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="2"
+        android:pathData="M122,28 Q170,10 220,24 L220,98 Q170,86 122,100 Z" />
+
+    <!-- Líneas de texto -->
+    <path
+        android:strokeColor="#90A4AE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M34,38 Q60,32 100,42 M34,50 Q60,44 100,54 M140,42 Q180,32 206,38 M140,54 Q180,44 206,50" />
+
+    <!-- Punto -->
+    <path
+        android:fillColor="#C62828"
+        android:pathData="M60,78 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
+
+    <!-- Coma -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M180,72 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M184,78 Q186,90 174,96 L176,99 Q194,92 190,76 Z" />
+</vector>

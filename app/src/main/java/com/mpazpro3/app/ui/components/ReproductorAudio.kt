@@ -30,22 +30,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.mpazpro3.app.device.recordarVibrador
 import kotlinx.coroutines.delay
 
 /**
- * Reproductor del audio de apoyo (RF-07 · recurso nativo del dispositivo).
+ * Reproductor del audio de apoyo (RF-07). Recurso nativo del dispositivo.
  *
- * Usa android.media.MediaPlayer, que es parte del sistema operativo: no requiere
- * ninguna librería externa ni permiso en el manifest, lo que respeta el RNF-03
- * (sin cámara, GPS, micrófono ni biometría).
+ * Usa android.media.MediaPlayer, que es parte del sistema operativo: no requiere librerías
+ * externas ni permisos en el manifest, lo que respeta el RNF-03 (sin cámara, GPS, micrófono ni
+ * biometría).
  *
- * RNF-02: el audio NO se reproduce solo al abrir la pantalla; el estudiante decide
- * cuándo escucharlo, y el texto escrito siempre está visible.
+ * RNF-02: el audio NO se reproduce solo al abrir la pantalla (el estudiante decide cuándo
+ * escucharlo) y el texto escrito siempre está visible.
  *
- * Ciclo de vida: el reproductor se crea al entrar y se libera en onDispose al salir.
- * Sin ese release() el audio seguiría sonando fuera de la pantalla y quedaría
- * ocupando memoria.
+ * Ciclo de vida: el reproductor se crea al entrar y se libera en onDispose al salir. Sin ese
+ * release() el audio seguiría sonando fuera de la pantalla y quedaría ocupando memoria.
  */
 @Composable
 fun ReproductorAudio(
@@ -53,25 +51,23 @@ fun ReproductorAudio(
     modifier: Modifier = Modifier
 ) {
     val contexto = LocalContext.current
-    val vibrador = recordarVibrador()
 
     var reproductor by remember { mutableStateOf<MediaPlayer?>(null) }
     var sonando by remember { mutableStateOf(false) }
+    var noDisponible by remember { mutableStateOf(false) }
     var duracionMs by remember { mutableIntStateOf(0) }
     var posicionMs by remember { mutableIntStateOf(0) }
 
-    // Crea el reproductor al entrar y lo libera al salir de la pantalla.
     DisposableEffect(audioResId) {
         val mp = MediaPlayer.create(contexto, audioResId)
         mp?.setOnCompletionListener { player ->
-            // Al terminar, vuelve al inicio y repone el botón en "reproducir".
+            // Al terminar vuelve al inicio y repone el botón en "reproducir".
             sonando = false
             posicionMs = 0
             player.seekTo(0)
-            // Aviso táctil de que el audio terminó, útil si el estudiante no mira la pantalla.
-            vibrador.aviso()
         }
         reproductor = mp
+        noDisponible = mp == null
         duracionMs = mp?.duration ?: 0
 
         onDispose {
@@ -91,18 +87,13 @@ fun ReproductorAudio(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = "Audio de apoyo",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("Audio de apoyo", style = MaterialTheme.typography.titleMedium)
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -142,6 +133,15 @@ fun ReproductorAudio(
                 text = "${aMinutosSegundos(posicionMs)} / ${aMinutosSegundos(duracionMs)}",
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            // RNF-02: si el archivo no se puede abrir, el estudiante igual cuenta con el texto escrito.
+            if (noDisponible) {
+                Text(
+                    text = "No se pudo cargar el audio. Puedes leer el texto del material.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
