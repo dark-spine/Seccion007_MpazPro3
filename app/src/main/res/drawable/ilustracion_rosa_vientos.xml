@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rosa de los vientos con las letras N, S, E y O dibujadas con trazos. Ilustración propia (RNF-05). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="140dp"
+    android:viewportWidth="140"
+    android:viewportHeight="140">
+
+    <!-- Círculo -->
+    <path
+        android:strokeColor="#B0BEC5"
+        android:strokeWidth="2"
+        android:pathData="M70,70 m-48,0 a48,48 0 1,0 96,0 a48,48 0 1,0 -96,0" />
+
+    <!-- Puntas: norte (roja), sur, este y oeste -->
+    <path
+        android:fillColor="#C62828"
+        android:pathData="M70,20 L82,70 L58,70 Z" />
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M70,120 L82,70 L58,70 Z" />
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M120,70 L70,58 L70,82 Z" />
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M20,70 L70,58 L70,82 Z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M70,70 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+
+    <!-- Letras: N arriba, S abajo, E a la derecha y O a la izquierda -->
+    <path
+        android:strokeColor="#0D3B7A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M65,17 L65,5 L75,17 L75,5" />
+    <path
+        android:strokeColor="#0D3B7A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M75,124 L65,124 L65,128 L75,128 L75,132 L65,132" />
+    <path
+        android:strokeColor="#0D3B7A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M134,64 L126,64 L126,76 L134,76 M126,70 L132,70" />
+    <path
+        android:strokeColor="#0D3B7A"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M6,64 L14,64 L14,76 L6,76 Z" />
+</vector>

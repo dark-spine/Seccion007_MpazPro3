@@ -1,18 +1,22 @@
 package com.mpazpro3.app.ui.screen.docente
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,88 +25,128 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.mpazpro3.app.domain.ReglasPlanificacion
+import com.mpazpro3.app.model.Resultado
 import com.mpazpro3.app.ui.components.BarraSuperior
+import com.mpazpro3.app.ui.components.MensajeResultado
+import com.mpazpro3.app.ui.components.PantallaCentrada
+import com.mpazpro3.app.ui.components.vibrarConfirmacion
 import com.mpazpro3.app.viewmodel.MpazProViewModel
+import kotlinx.coroutines.launch
 
 /**
- * Módulo "Planificación docente": el docente selecciona los objetivos/contenidos disponibles
- * (autorizados por UTP), define el máximo de intentos de la evaluación final y los asigna a su
- * curso.
- *
- * TODO(equipo):
- *  - contenidosDisponiblesParaAsignar() hoy muestra TODOS los contenidos; debe mostrar solo los
- *    aprobados (regla de negocio).
- *  - asignarAlCurso() todavía no guarda nada.
+ * RF-03, RF-04 y RF-05: el docente ve solo los contenidos autorizados por UTP, elige cuáles
+ * asignar al curso y define el máximo de intentos de la evaluación final (1 a 10).
  */
 @Composable
 fun PlanificacionDocenteScreen(navController: NavHostController, viewModel: MpazProViewModel) {
     val usuario by viewModel.usuarioActivo.collectAsState()
-    val todos by viewModel.contenidos.collectAsState()
-    val disponibles = remember(todos) { viewModel.contenidosDisponiblesParaAsignar() }
+    val contenidos by viewModel.contenidos.collectAsState()
+    val asignaciones by viewModel.asignaciones.collectAsState()
+    val curso = usuario?.curso
 
-    var seleccionados by remember { mutableStateOf(setOf<String>()) }
+    val disponibles = remember(contenidos) { viewModel.contenidosDisponiblesParaAsignar() }
+    val yaAsignados = remember(asignaciones, curso) {
+        curso?.let { viewModel.asignacionesDelCurso(it) }.orEmpty().associateBy { it.contenidoId }
+    }
+
+    var seleccion by remember { mutableStateOf(setOf<String>()) }
     var maxIntentos by remember { mutableIntStateOf(2) }
-    var mensaje by remember { mutableStateOf<String?>(null) }
+    var resultado by remember { mutableStateOf<Resultado?>(null) }
+    val errorIntentos = ReglasPlanificacion.errorMaxIntentos(maxIntentos)
 
-    Scaffold(topBar = { BarraSuperior("Planificación docente", navController) }) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("1. Selecciona los objetivos a trabajar", style = MaterialTheme.typography.titleSmall)
+    val contexto = LocalContext.current
+    val alcance = rememberCoroutineScope()
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(disponibles) { contenido ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = contenido.id in seleccionados,
-                                onCheckedChange = { marcado ->
-                                    seleccionados = if (marcado) seleccionados + contenido.id else seleccionados - contenido.id
-                                }
-                            )
-                            Column {
-                                Text(contenido.asignatura.etiqueta, style = MaterialTheme.typography.labelMedium)
-                                Text(contenido.objetivoAprendizaje, style = MaterialTheme.typography.bodyMedium)
-                                Text(contenido.estado.etiqueta, style = MaterialTheme.typography.labelSmall)
+    Scaffold(topBar = { BarraSuperior("Planificar actividades", navController) }) { padding ->
+        PantallaCentrada(padding) {
+            if (curso == null) {
+                Text(ReglasPlanificacion.MENSAJE_SIN_CURSO, style = MaterialTheme.typography.bodyLarge)
+                return@PantallaCentrada
+            }
+            Text("Curso: $curso", style = MaterialTheme.typography.titleMedium)
+
+            if (disponibles.isEmpty()) {
+                Text("UTP todavía no ha autorizado contenidos", style = MaterialTheme.typography.bodyLarge)
+                return@PantallaCentrada
+            }
+
+            Text("Contenidos autorizados por UTP", style = MaterialTheme.typography.titleMedium)
+            disponibles.forEach { contenido ->
+                val asignacion = yaAsignados[contenido.id]
+                val marcado = contenido.id in seleccion
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = marcado,
+                            onCheckedChange = { activo ->
+                                seleccion = if (activo) seleccion + contenido.id else seleccion - contenido.id
+                                resultado = null
+                            }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(contenido.asignatura.etiqueta, style = MaterialTheme.typography.labelLarge)
+                            Text(contenido.unidad, style = MaterialTheme.typography.titleSmall)
+                            Text(contenido.objetivoAprendizaje, style = MaterialTheme.typography.bodySmall)
+                            if (asignacion != null) {
+                                Text(
+                                    "Ya asignado · ${asignacion.maxIntentosEvaluacion} intento(s) en la evaluación",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
                             }
                         }
                     }
                 }
             }
 
-            Text("2. Máximo de intentos de la evaluación final", style = MaterialTheme.typography.titleSmall)
+            Text("Máximo de intentos de la evaluación final", style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedButton(onClick = { if (maxIntentos > 1) maxIntentos-- }) { Text("−") }
-                Text("$maxIntentos", style = MaterialTheme.typography.headlineSmall)
-                OutlinedButton(onClick = { if (maxIntentos < 10) maxIntentos++ }) { Text("+") }
+                FilledTonalIconButton(onClick = {
+                    maxIntentos = (maxIntentos - 1).coerceAtLeast(ReglasPlanificacion.MIN_INTENTOS - 1)
+                    resultado = null
+                }) { Icon(Icons.Filled.Remove, contentDescription = "Restar un intento") }
+                Text("$maxIntentos", style = MaterialTheme.typography.headlineMedium)
+                FilledTonalIconButton(onClick = {
+                    maxIntentos = (maxIntentos + 1).coerceAtMost(ReglasPlanificacion.MAX_INTENTOS + 1)
+                    resultado = null
+                }) { Icon(Icons.Filled.Add, contentDescription = "Sumar un intento") }
+            }
+            AnimatedVisibility(visible = errorIntentos != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Filled.Error, contentDescription = "Dato con error", tint = MaterialTheme.colorScheme.error)
+                    Text(errorIntentos.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
             }
 
-            mensaje?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
-
             Button(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = seleccionados.isNotEmpty(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = errorIntentos == null,
                 onClick = {
-                    viewModel.asignarAlCurso(usuario?.curso.orEmpty(), seleccionados.toList(), maxIntentos)
-                    mensaje = "Asignación enviada (se verá en el panel cuando asignarAlCurso() esté implementada)."
-                    seleccionados = emptySet()
+                    alcance.launch {
+                        val r = viewModel.asignarAlCurso(curso, seleccion.toList(), maxIntentos)
+                        resultado = r
+                        if (r.exito) {
+                            vibrarConfirmacion(contexto)
+                            seleccion = emptySet()
+                        }
+                    }
                 }
-            ) { Text("3. Asignar a mi curso") }
+            ) { Text("Asignar al curso") }
+
+            MensajeResultado(resultado)
         }
     }
 }

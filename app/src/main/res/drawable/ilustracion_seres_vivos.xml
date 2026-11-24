@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sol, planta en maceta y gota de agua: lo que necesitan los seres vivos. Ilustración propia (RNF-05). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="120dp"
+    android:viewportWidth="240"
+    android:viewportHeight="120">
+
+    <!-- Sol -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M40,34 m-16,0 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0" />
+    <path
+        android:strokeColor="#FFA000"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M40,8 L40,2 M40,60 L40,66 M14,34 L8,34 M66,34 L72,34 M22,16 L18,12 M58,16 L62,12 M22,52 L18,56 M58,52 L62,56" />
+
+    <!-- Maceta -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M96,84 L144,84 L138,112 L102,112 Z" />
+    <!-- Tallo -->
+    <path
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M120,84 L120,40" />
+    <!-- Hojas -->
+    <path
+        android:fillColor="#66BB6A"
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="1.5"
+        android:pathData="M120,58 Q98,56 92,36 Q114,36 120,58 Z" />
+    <path
+        android:fillColor="#66BB6A"
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="1.5"
+        android:pathData="M120,46 Q142,44 148,24 Q126,24 120,46 Z" />
+
+    <!-- Gota de agua -->
+    <path
+        android:fillColor="#42A5F5"
+        android:strokeColor="#1565C0"
+        android:strokeWidth="1.5"
+        android:pathData="M200,34 Q216,58 216,70 A16,16 0 1,1 184,70 Q184,58 200,34 Z" />
+</vector>

@@ -1,6 +1,6 @@
 package com.mpazpro3.app.model
 
-/** Dificultad de un desafío. Escala propuesta (pendiente de confirmar con el CITT). */
+/** Dificultad de un desafío (SUP-05: escala libre fácil / medio / difícil). */
 enum class Dificultad(val etiqueta: String) {
     FACIL("Fácil"),
     MEDIO("Medio"),
@@ -14,7 +14,7 @@ data class Alternativa(
 
 /**
  * Actividad o pregunta (entidad "Actividad/prueba" del caso). Si esEvaluacionFinal es false es
- * un desafío de práctica; los desafíos se presentan con dificultad progresiva (orden).
+ * un desafío de práctica; los desafíos se presentan con dificultad progresiva (dificultad y orden).
  */
 data class Actividad(
     val id: String,
